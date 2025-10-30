@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Visitor Tracker Demo</title>
+</head>
+<body>
+  <h1>Welcome to my visitor tracker site 🚀</h1>
+  <p>This page will log anonymous visits using Supabase.</p>
+
+  <div id="cookie-banner" style="display:none; position:fixed; bottom:10px; left:10px; background:#eee; padding:1em;">
+    This site uses cookies for analytics. <button id="accept">Accept</button>
+  </div>
+
+  <script>
+    const consentKey = "consent";
+    const banner = document.getElementById("cookie-banner");
+
+    if (!localStorage.getItem(consentKey)) {
+      banner.style.display = "block";
+    }
+
+    document.getElementById("accept").onclick = () => {
+      localStorage.setItem(consentKey, "true");
+      banner.style.display = "none";
+      sendVisit();
+    };
+
+    async function sendVisit(eventType = "pageview") {
+      if (localStorage.getItem(consentKey) !== "true") return;
+
+      const visitorId = localStorage.getItem("visitor_id") || (() => {
+        const id = crypto.randomUUID();
+        localStorage.setItem("visitor_id", id);
+        return id;
+      })();
+
+      const payload = {
+        visitor_id: visitorId,
+        page_url: location.href,
+        referrer: document.referrer,
+        user_agent: navigator.userAgent,
+        language: navigator.language,
+        screen_width: screen.width,
+        screen_height: screen.height,
+        event_type: eventType,
+        consent: true
+      };
+
+      await fetch("/api/collect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if (localStorage.getItem(consentKey) === "true") sendVisit();
+  </script>
+</body>
+</html>
